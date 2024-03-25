@@ -3,3 +3,4 @@ data/
 *.exe
 /model/
 *.log
+/.vscode/

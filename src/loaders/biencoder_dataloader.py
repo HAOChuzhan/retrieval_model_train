@@ -18,8 +18,10 @@ class RetrievalDataLoader:
         self.negative_size = args.train_n_passages - 1
         assert self.negative_size > 0
         self.tokenizer = tokenizer
-        corpus_path = os.path.join(args.data_dir, 'passages.jsonl.gz')
-        self.corpus: Dataset = load_dataset('json', data_files=corpus_path)['train']
+        # corpus_path = os.path.join(args.data_dir, 'passages.jsonl.gz')
+        corpus_path = os.path.join(args.data_dir, 'passages.jsonl')
+        self.corpus: Dataset = load_dataset(
+            'json', data_files=corpus_path)['train']
         self.train_dataset, self.eval_dataset = self._get_transformed_datasets()
 
         # use its state to decide which positives/negatives to sample
@@ -34,10 +36,13 @@ class RetrievalDataLoader:
             offset=current_epoch + self.args.seed,
             use_first_positive=self.args.use_first_positive
         )
-        assert len(input_doc_ids) == len(examples['query']) * self.args.train_n_passages
+        assert len(input_doc_ids) == len(
+            examples['query']) * self.args.train_n_passages
 
-        input_docs: List[str] = [self.corpus[doc_id]['contents'] for doc_id in input_doc_ids]
-        input_titles: List[str] = [self.corpus[doc_id]['title'] for doc_id in input_doc_ids]
+        input_docs: List[str] = [self.corpus[doc_id]['contents']
+                                 for doc_id in input_doc_ids]
+        input_titles: List[str] = [self.corpus[doc_id]['title']
+                                   for doc_id in input_doc_ids]
 
         query_batch_dict = self.tokenizer(examples['query'],
                                           max_length=self.args.q_max_len,
@@ -49,7 +54,8 @@ class RetrievalDataLoader:
                                         padding=PaddingStrategy.DO_NOT_PAD,
                                         truncation=True)
 
-        merged_dict = {'q_{}'.format(k): v for k, v in query_batch_dict.items()}
+        merged_dict = {'q_{}'.format(
+            k): v for k, v in query_batch_dict.items()}
         step_size = self.args.train_n_passages
         for k, v in doc_batch_dict.items():
             k = 'd_{}'.format(k)
@@ -74,10 +80,12 @@ class RetrievalDataLoader:
             merged_dict['kd_labels'] = []
             for idx in range(0, len(input_doc_ids), step_size):
                 qid = examples['query_id'][idx // step_size]
-                cur_kd_labels = [qid_to_doc_id_to_score[qid][doc_id] for doc_id in input_doc_ids[idx:idx + step_size]]
+                cur_kd_labels = [qid_to_doc_id_to_score[qid][doc_id]
+                                 for doc_id in input_doc_ids[idx:idx + step_size]]
                 merged_dict['kd_labels'].append(cur_kd_labels)
             assert len(merged_dict['kd_labels']) == len(examples['query_id']), \
-                '{} != {}'.format(len(merged_dict['kd_labels']), len(examples['query_id']))
+                '{} != {}'.format(
+                    len(merged_dict['kd_labels']), len(examples['query_id']))
 
         # Custom formatting function must return a dict
         return merged_dict
@@ -97,10 +105,12 @@ class RetrievalDataLoader:
                 raise ValueError("--do_train requires a train dataset")
             train_dataset = raw_datasets["train"]
             if self.args.max_train_samples is not None:
-                train_dataset = train_dataset.select(range(self.args.max_train_samples))
+                train_dataset = train_dataset.select(
+                    range(self.args.max_train_samples))
             # Log a few random samples from the training set:
             for index in random.sample(range(len(train_dataset)), 3):
-                logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
+                logger.info(
+                    f"Sample {index} of the training set: {train_dataset[index]}.")
             train_dataset.set_transform(self._transform_func)
 
         if self.args.do_eval:

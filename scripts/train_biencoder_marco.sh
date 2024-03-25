@@ -7,10 +7,10 @@ DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
 echo "working directory: ${DIR}"
 
 if [ -z "$OUTPUT_DIR" ]; then
-  OUTPUT_DIR="${DIR}/checkpoint/biencoder_$(date +%F-%H%M.%S)"
+  OUTPUT_DIR="${DIR}/checkpoint/biencoder_bge_large_$(date +%F-%H%M.%S)"
 fi
 if [ -z "$DATA_DIR" ]; then
-  DATA_DIR="${DIR}/data/msmarco_bm25_official"
+  DATA_DIR="${DIR}/data/finance6w"
 fi
 
 mkdir -p "${OUTPUT_DIR}"
@@ -19,9 +19,10 @@ PROC_PER_NODE=$(nvidia-smi --list-gpus | wc -l)
 # python -u -m torch.distributed.launch --nproc_per_node ${PROC_PER_NODE} src/train_biencoder.py \
 # --per_device_train_batch_size 16 \
 # --model_name_or_path intfloat/simlm-base-msmarco \
-deepspeed --include localhost:0,1,2 src/train_biencoder.py --deepspeed ds_config.json \
-    --model_name_or_path /home/tju_by/hcz/retrieval_model_train/model/gte-base-zh \
-    --per_device_train_batch_size 16 \
+# bge-large-zh-v1.5
+deepspeed --include localhost:0,1,2,3 src/train_biencoder.py --deepspeed ds_config.json \
+    --model_name_or_path /home/tju_by/hcz/retrieval_model_train/model/bge-large-zh-v1.5 \
+    --per_device_train_batch_size 6 \
     --per_device_eval_batch_size 32 \
     --add_pooler False \
     --t 0.02 \
@@ -34,7 +35,6 @@ deepspeed --include localhost:0,1,2 src/train_biencoder.py --deepspeed ds_config
     --p_max_len 144 \
     --train_n_passages 16 \
     --dataloader_num_workers 1 \
-    --max_train_samples 24000\
     --num_train_epochs 3 \
     --learning_rate 2e-5 \
     --use_scaled_loss True \
@@ -50,3 +50,4 @@ deepspeed --include localhost:0,1,2 src/train_biencoder.py --deepspeed ds_config
     --overwrite_output_dir \
     --disable_tqdm True \
     --report_to none "$@"
+#  --max_train_samples 24000 \
